@@ -13,9 +13,9 @@ public:
 	float F;			  // G + H
 public:
 	SearchNode(const Position& currentPosition, float _H, float deltaG, SearchNode* prev);
+	~SearchNode();
 	void resetPrev(SearchNode* prev, float deltaG);
 	float distance() const;
 	static bool lessThan(SearchNode* n1, SearchNode* n2);
-	~SearchNode();
 };
 

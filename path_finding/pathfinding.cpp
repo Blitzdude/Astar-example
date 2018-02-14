@@ -5,11 +5,18 @@
 #include <glut/glut.h>
 #include <memory.h>
 
+#include "ClosedList.h"
+#include "OpenList.h"
+#include "SearchNode.h"
+
 // Function prototypes
 void plasmaTest();
 
+
 namespace
 {
+
+
 	// Sets a pixel of rgb color into memory
 	void setPixel(uint8_t* data, int x, int y, int width, int height, uint8_t r, uint8_t g, uint8_t b)
 	{
@@ -26,18 +33,38 @@ namespace
 	void doPathFinding(const uint8_t* inputData, int width, int height, uint8_t* outputData, int startX, int startY, int endX, int endY)
 	{
 		printf("STUDENT_TODO: Do path finding from <%d,%d> to <%d,%d>\n", startX, startY, endX, endY);
-		// Make noise for now
-		/*
-		for (size_t i = 0; i < 3 * width*height; i+=3)
+		ClosedList closedList;
+		OpenList openList;
+
+		// current node beign evaluated
+		SearchNode* current = nullptr;
+
+		// add start position to open list
+		SearchNode* start = new SearchNode(Position(startX, startY), dist(startX, startY, endX, endY), 0.0f, nullptr);
+		openList.insertToOpenList(start);
+		// A* star pathfinding - main loop
+		while (true)
 		{
-		int val = rand();
-		outputData[i+0] = val;
-		outputData[i+1] = val;
-		outputData[i+2] = val;
+
+			current = openList.RemoveSmallestFFromOpenList();
+			closedList.addToClosedList(current);
+
+			if (current->pos == Position(endX, endY))
+			{
+				break; // path found, break while loop
+			}
+
+			// right 
+			// up 
+			// down
+
 		}
-		*/
+		// A* star pathfinding - end loop
+
+		// traverse the path and set path pixels. 
+
 	}
-}
+};
 
 
 namespace
@@ -166,7 +193,7 @@ namespace
 	void draw()
 	{
 		memset(outputData, 0, 3 * width*height);
-		doPathFinding(inputData, width, height, outputData, startX, startY, endX, endY);
+		//doPathFinding(inputData, width, height, outputData, startX, startY, endX, endY);
 
 
 		// Run plasmatest
