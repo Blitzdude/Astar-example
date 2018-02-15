@@ -30,6 +30,12 @@ void OpenList::sortOpenList()
 	std::cout << "\n";
 }
 
+bool OpenList::isInOpenList(Position pos)
+{
+
+	return false;
+}
+
 SearchNode* OpenList::RemoveSmallestFFromOpenList()
 {
 	SearchNode* temp = &m_openList.back();

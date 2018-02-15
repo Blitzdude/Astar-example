@@ -9,6 +9,7 @@ public:
 
 	void insertToOpenList(SearchNode* n);
 	void sortOpenList();
+	bool isInOpenList(Position pos);
 	SearchNode* RemoveSmallestFFromOpenList();
 	bool isEmpty();
 	void clear();

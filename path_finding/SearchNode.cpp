@@ -19,7 +19,7 @@ SearchNode::resetPrev(SearchNode * prev, float deltaG)
 {
 	
 	prevNode = prev;
-	if (prev == 0)
+	if (prev == nullptr)
 		G = 0.0f;
 	else
 		G = deltaG + prev->G;

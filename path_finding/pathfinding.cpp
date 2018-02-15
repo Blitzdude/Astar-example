@@ -8,15 +8,12 @@
 #include "ClosedList.h"
 #include "OpenList.h"
 #include "SearchNode.h"
-
+#include "SearchLevel.h"
 // Function prototypes
-void plasmaTest();
 
 
 namespace
 {
-
-
 	// Sets a pixel of rgb color into memory
 	void setPixel(uint8_t* data, int x, int y, int width, int height, uint8_t r, uint8_t g, uint8_t b)
 	{
@@ -26,37 +23,87 @@ namespace
 		pixel[2] = r;
 	}
 
-	double dist(double a, double b, double c, double d) {
+	double dist(double a, double b, double c, double d) { // pythagorian distance
 		return sqrt(double((a - c) * (a - c) + (b - d) * (b - d)));
 	}
 	// STUDENT_TODO: Make implementation for doPathFinding function, which writes found path to outputData
+	/*
+		A(*) algorithm
+		
+		Init:
+		1. create open and closed list and search level data
+		2. create pointer to current node beign evaluated
+		3.add start position to open list
+
+		algorithm:
+		1. make current the node with the lowest F in the open list
+		2. move current from open list to closed list
+		3. if the current is the goal, break the loop for the path has been found. 
+
+		4. get current nodes adjacent nodes
+		5. for each neighbor:
+			(i) if the neighbor is in the closed list -> ignore it
+			(ii) if the neighbor is not in the open list -> add it to open list
+			(iii) if the neighbor is in the open list
+					-> check if current.G + neighbor.H < neighbor.F 
+					true: update neigbor.F and reparent it to current. 
+					false: ignore
+
+
+	*/
 	void doPathFinding(const uint8_t* inputData, int width, int height, uint8_t* outputData, int startX, int startY, int endX, int endY)
 	{
 		printf("STUDENT_TODO: Do path finding from <%d,%d> to <%d,%d>\n", startX, startY, endX, endY);
+		SearchLevel searchLevel(inputData, width, height);
 		ClosedList closedList;
 		OpenList openList;
 
 		// current node beign evaluated
 		SearchNode* current = nullptr;
 
-		// add start position to open list
-		SearchNode* start = new SearchNode(Position(startX, startY), dist(startX, startY, endX, endY), 0.0f, nullptr);
+		// add start position to open list, set f to 0.
+		SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::euclideanDist(startX, startY, endX, endY), 0.0f, nullptr);
 		openList.insertToOpenList(start);
-		// A* star pathfinding - main loop
-		while (true)
-		{
 
+		// A* star pathfinding - main loop
+		while (!openList.isEmpty())
+		{
+			// sort the open list
+			openList.sortOpenList();
+
+			// add the node with smallest f to closed list. 
 			current = openList.RemoveSmallestFFromOpenList();
 			closedList.addToClosedList(current);
 
+			// if the current node is the goal
 			if (current->pos == Position(endX, endY))
 			{
 				break; // path found, break while loop
 			}
 
-			// right 
-			// up 
-			// down
+			// find current nodes walkable neighbors 
+			auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
+			for (auto& itr : neighbors)
+			{
+				// is neighbor in closed list
+				if (closedList.isInClosedList(itr))
+				{
+					continue; // to next neighbor
+				}
+				// is neighbor in open list?
+				
+				if (!openList.isInOpenList(itr)) 
+				{
+					openList.insertToOpenList(new SearchNode(
+						itr,
+						SearchLevel::euclideanDist(endX, itr.first, endY, itr.second),
+						1.0f,
+						current
+					));
+				}
+			}
+			
+			// push current into open list
 
 		}
 		// A* star pathfinding - end loop
@@ -104,6 +151,44 @@ namespace
 		if (h) *h = height;
 		return texId;
 	}
+
+namespace
+{
+	void plasmaTest() {
+
+		// PLASMA TEST ///////////////////////////////////////////////////////
+		/////////////////////////////////////////////////////////////////////
+
+		static double time = 10.0;
+
+		time += 0.5;
+		for (int y = 0; y < height; y++)
+			for (int x = 0; x < width; x++)
+			{
+				double value = sin(dist(x + time, y, 128.0, 128.0) / 8.0)
+					+ sin(dist(x, y, 64.0, 64.0) / 8.0)
+					+ sin(dist(x, y + time / 7, 192.0, 64) / 7.0)
+					+ sin(dist(x, y, 192.0, 100.0) / 8.0);
+				int color1 = int((4 + value)) * 32;
+
+				value = sin(dist(x + time + 1.0, y, 128.0, 128.0) / 8.0)
+					+ cos(dist(x, y, 64.0, 64.0) / 8.0)
+					+ sin(dist(x, y + time + 1.0 / 7, 192.0, 64) / 7.0)
+					+ cos(dist(x, y, 192.0, 100.0) / 8.0);
+				int color2 = int((4 + value)) * 32;
+
+				value = cos(dist(x + time + 1.0, y, 128.0, 128.0) / 8.0)
+					+ cos(dist(x, y, 64.0, 64.0) / 8.0)
+					+ cos(dist(x, y + time + 1.0 / 7, 192.0, 64) / 7.0)
+					+ cos(dist(x, y, 192.0, 100.0) / 8.0);
+				int color3 = int((4 + value)) * 32;
+
+				setPixel(outputData, x, y, width, height, color1, color2, color3);
+			}
+	}
+		// Plasma Test end /////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////
+}
 
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	// Global variables
@@ -250,42 +335,4 @@ int main(int argc, char ** argv) {
 	delete inputData;
 	delete outputData;
 	return 0;
-}
-
-void plasmaTest() {
-
-	// PLASMA TEST ///////////////////////////////////////////////////////
-	/////////////////////////////////////////////////////////////////////
-
-	static double time = 10.0;
-
-	time += 0.5;
-	for (int y = 0; y < height; y++)
-		for (int x = 0; x < width; x++)
-		{
-			double value = sin(dist(x + time, y, 128.0, 128.0) / 8.0)
-				+ sin(dist(x, y, 64.0, 64.0) / 8.0)
-				+ sin(dist(x, y + time / 7, 192.0, 64) / 7.0)
-				+ sin(dist(x, y, 192.0, 100.0) / 8.0);
-			int color1 = int((4 + value)) * 32;
-
-			value = sin(dist(x + time + 1.0, y, 128.0, 128.0) / 8.0)
-				+ cos(dist(x, y, 64.0, 64.0) / 8.0)
-				+ sin(dist(x, y + time + 1.0 / 7, 192.0, 64) / 7.0)
-				+ cos(dist(x, y, 192.0, 100.0) / 8.0);
-			int color2 = int((4 + value)) * 32;
-
-			value = cos(dist(x + time + 1.0, y, 128.0, 128.0) / 8.0)
-				+ cos(dist(x, y, 64.0, 64.0) / 8.0)
-				+ cos(dist(x, y + time + 1.0 / 7, 192.0, 64) / 7.0)
-				+ cos(dist(x, y, 192.0, 100.0) / 8.0);
-			int color3 = int((4 + value)) * 32;
-
-			setPixel(outputData, x, y, width, height, color1, color2, color3);
-		}
-
-
-	// Plasma Test end /////////////////////////////////////////////////
-	////////////////////////////////////////////////////////////////////
-
 }
