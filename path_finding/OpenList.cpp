@@ -11,6 +11,19 @@ OpenList::~OpenList()
 {
 }
 
+SearchNode * OpenList::findFromOpenLIst(Position pos)
+{
+	auto itr = m_openList.begin();
+	for (; itr != m_openList.end(); itr++) {
+
+		if ((itr->pos.first == pos.first) && (itr->pos.second == pos.second))
+		{
+			return &(*itr);
+		}
+	}
+	return nullptr;
+}
+
 void OpenList::insertToOpenList(SearchNode * n)
 {
 	m_openList.push_back(*n);
@@ -32,8 +45,10 @@ void OpenList::sortOpenList()
 
 bool OpenList::isInOpenList(Position pos)
 {
-
-	return false;
+	if (findFromOpenLIst(pos) != nullptr)
+		return true;
+	else
+		return false;
 }
 
 SearchNode* OpenList::RemoveSmallestFFromOpenList()

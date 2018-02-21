@@ -7,6 +7,7 @@ public:
 	OpenList();
 	~OpenList();
 
+	SearchNode* findFromOpenLIst(Position pos);
 	void insertToOpenList(SearchNode* n);
 	void sortOpenList();
 	bool isInOpenList(Position pos);
@@ -16,6 +17,7 @@ public:
 private:
 	std::vector<SearchNode> m_openList;
 	// comparison function
-	bool lessThan() {};
+	bool lessThan(float a, float b) { return a < b; };
+	bool samePos(Position a, Position b) { return (a.first == b.first) && (a.second == b.second); };
 };
 

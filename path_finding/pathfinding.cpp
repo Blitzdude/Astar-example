@@ -10,7 +10,7 @@
 #include "SearchNode.h"
 #include "SearchLevel.h"
 // Function prototypes
-
+void plasmaTest();
 
 namespace
 {
@@ -90,10 +90,11 @@ namespace
 				{
 					continue; // to next neighbor
 				}
-				// is neighbor in open list?
-				
-				if (!openList.isInOpenList(itr)) 
+
+				// neighbor is not in open list
+				if (!openList.isInOpenList(itr))
 				{
+					// push into openlist
 					openList.insertToOpenList(new SearchNode(
 						itr,
 						SearchLevel::euclideanDist(endX, itr.first, endY, itr.second),
@@ -101,9 +102,20 @@ namespace
 						current
 					));
 				}
+				// neighbor is in open list
+				else
+				{
+					/*
+					->check if current.G + neighbor.H < neighbor.F
+						true: update neigbor.F and reparent it to current.
+						false : ignore
+					*/
+					if (true) {
+
+					}
+				}
 			}
 			
-			// push current into open list
 
 		}
 		// A* star pathfinding - end loop
@@ -152,43 +164,8 @@ namespace
 		return texId;
 	}
 
-namespace
-{
-	void plasmaTest() {
+	
 
-		// PLASMA TEST ///////////////////////////////////////////////////////
-		/////////////////////////////////////////////////////////////////////
-
-		static double time = 10.0;
-
-		time += 0.5;
-		for (int y = 0; y < height; y++)
-			for (int x = 0; x < width; x++)
-			{
-				double value = sin(dist(x + time, y, 128.0, 128.0) / 8.0)
-					+ sin(dist(x, y, 64.0, 64.0) / 8.0)
-					+ sin(dist(x, y + time / 7, 192.0, 64) / 7.0)
-					+ sin(dist(x, y, 192.0, 100.0) / 8.0);
-				int color1 = int((4 + value)) * 32;
-
-				value = sin(dist(x + time + 1.0, y, 128.0, 128.0) / 8.0)
-					+ cos(dist(x, y, 64.0, 64.0) / 8.0)
-					+ sin(dist(x, y + time + 1.0 / 7, 192.0, 64) / 7.0)
-					+ cos(dist(x, y, 192.0, 100.0) / 8.0);
-				int color2 = int((4 + value)) * 32;
-
-				value = cos(dist(x + time + 1.0, y, 128.0, 128.0) / 8.0)
-					+ cos(dist(x, y, 64.0, 64.0) / 8.0)
-					+ cos(dist(x, y + time + 1.0 / 7, 192.0, 64) / 7.0)
-					+ cos(dist(x, y, 192.0, 100.0) / 8.0);
-				int color3 = int((4 + value)) * 32;
-
-				setPixel(outputData, x, y, width, height, color1, color2, color3);
-			}
-	}
-		// Plasma Test end /////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////
-}
 
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	// Global variables
@@ -336,3 +313,38 @@ int main(int argc, char ** argv) {
 	delete outputData;
 	return 0;
 }
+
+void plasmaTest() {
+
+	// PLASMA TEST ///////////////////////////////////////////////////////
+	/////////////////////////////////////////////////////////////////////
+
+	static double time = 10.0;
+
+	time += 0.5;
+	for (int y = 0; y < height; y++)
+		for (int x = 0; x < width; x++)
+		{
+			double value = sin(dist(x + time, y, 128.0, 128.0) / 8.0)
+				+ sin(dist(x, y, 64.0, 64.0) / 8.0)
+				+ sin(dist(x, y + time / 7, 192.0, 64) / 7.0)
+				+ sin(dist(x, y, 192.0, 100.0) / 8.0);
+			int color1 = int((4 + value)) * 32;
+
+			value = sin(dist(x + time + 1.0, y, 128.0, 128.0) / 8.0)
+				+ cos(dist(x, y, 64.0, 64.0) / 8.0)
+				+ sin(dist(x, y + time + 1.0 / 7, 192.0, 64) / 7.0)
+				+ cos(dist(x, y, 192.0, 100.0) / 8.0);
+			int color2 = int((4 + value)) * 32;
+
+			value = cos(dist(x + time + 1.0, y, 128.0, 128.0) / 8.0)
+				+ cos(dist(x, y, 64.0, 64.0) / 8.0)
+				+ cos(dist(x, y + time + 1.0 / 7, 192.0, 64) / 7.0)
+				+ cos(dist(x, y, 192.0, 100.0) / 8.0);
+			int color3 = int((4 + value)) * 32;
+
+			setPixel(outputData, x, y, width, height, color1, color2, color3);
+		}
+}
+// Plasma Test end /////////////////////////////////////////////////
+////////////////////////////////////////////////////////////////////
