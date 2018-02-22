@@ -68,7 +68,7 @@ namespace
 		memcpy(outputData, inputData, 3 * width*height);
 
 		// add start position to open list, set f to 0.
-		SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::euclideanDist(startX, startY, endX, endY), 0.0f, nullptr);
+		SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::manhattanDist(startX, startY, endX, endY), 0.0f, nullptr);
 		openList.insertToOpenList(start);
 
 		// A* star pathfinding - main loop
@@ -80,8 +80,7 @@ namespace
 			// add the node with smallest f to closed list. 
 			current = openList.RemoveSmallestFFromOpenList();
 			closedList.addToClosedList(current);
-			// color the closed list node dark grey
-			setPixel(outputData, current->pos.first, current->pos.second, width, height, 10, 10, 10);
+			
 
 			// if the current node is the goal
 			if (current->pos == Position(endX, endY))
@@ -105,7 +104,7 @@ namespace
 					// push into openlist
 					openList.insertToOpenList(new SearchNode(
 						n_itr,
-						SearchLevel::euclideanDist(endX, n_itr.first, endY, n_itr.second),
+						SearchLevel::manhattanDist(endX, n_itr.first, endY, n_itr.second),
 						1.0f,
 						current
 					));
@@ -136,15 +135,16 @@ namespace
 		}
 		// A* star pathfinding - end loop
 
-		
-
+		// clear the left side
+		memcpy(outputData, inputData, 3 * width*height);
 		// traverse the path and set path pixels. 
 		do {
+			drawLevel();
 			// color the current node black
-			setPixel(outputData, current->pos.first, current->pos.second, width, height, 0, 0, 0);
+			setPixel(outputData, current->pos.first, current->pos.second, width, height, 0, 255, 0);
 			// make current point to previous node
-			current = current->prevNode;
-		} while (current->pos.first != startX && current->pos.second == startY); // do, until we point to the start node, which has no parent
+			current = ;
+		} while (current->prevNode != nullptr); // do, until we point to the start node, which has no parent
 		
 
 	}
@@ -214,10 +214,10 @@ namespace
 		glOrtho(0, 512 + 4, 256 + 2, 0, -1, 1);
 
 		// Load input file
-		inputTexture = loadBMPTexture("input.bmp", &width, &height, &inputData);
+		inputTexture = loadBMPTexture("input2.bmp", &width, &height, &inputData);
 		if (0 == inputTexture)
 		{
-			printf("Error! Cannot open file: \"input.bmp\"\n");
+			printf("Error! Cannot open file: \"input2.bmp\"\n");
 			return false;
 		}
 

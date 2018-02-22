@@ -22,7 +22,7 @@ float SearchLevel::getDeltaG(SearchNode* fromNode, SearchNode* toNode) // Search
 float SearchLevel::getH(SearchNode * fromPos, SearchNode * toPos)
 {
 	
-	return (float)euclideanDist(toPos->pos.first, fromPos->pos.first, toPos->pos.second, fromPos->pos.second);
+	return (float)manhattanDist(toPos->pos.first, fromPos->pos.first, toPos->pos.second, fromPos->pos.second);
 }
 
 bool SearchLevel::isWalkable(int x, int y)
