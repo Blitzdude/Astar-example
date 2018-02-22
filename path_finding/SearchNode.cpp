@@ -34,12 +34,6 @@ SearchNode::distance() const
 	return F;
 }
 
-// less than function for sorting
-bool SearchNode::lessThan(SearchNode * n1, SearchNode * n2)
-{
-	
-	return n1->distance() > n2->distance();
-}
 
 
 SearchNode::~SearchNode()

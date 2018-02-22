@@ -11,7 +11,7 @@ OpenList::~OpenList()
 {
 }
 
-SearchNode * OpenList::findFromOpenLIst(Position pos)
+SearchNode * OpenList::findFromOpenList(Position pos)
 {
 	auto itr = m_openList.begin();
 	for (; itr != m_openList.end(); itr++) {
@@ -31,21 +31,23 @@ void OpenList::insertToOpenList(SearchNode * n)
 
 void OpenList::sortOpenList()
 {
-	std::sort(m_openList.begin(), m_openList.end(), [](const SearchNode &a, const SearchNode &b)
+	std::sort(m_openList.begin(), m_openList.end(), [](const SearchNode& n1, const SearchNode& n2) -> bool
 	{
-		return a.F > b.F;
+		return (n1.F > n2.F);
 	});
-	// Debug 
-	for (auto& itr : m_openList)
+	// DEBUG
+	/*
+	for (auto& it : m_openList)
 	{
-		std::cout << itr.F << " ";
+		std::cout << it.F << std::endl;
 	}
-	std::cout << "\n";
+	std::cout << "\n\n";
+	*/
 }
 
 bool OpenList::isInOpenList(Position pos)
 {
-	if (findFromOpenLIst(pos) != nullptr)
+	if (findFromOpenList(pos) != nullptr)
 		return true;
 	else
 		return false;
@@ -67,3 +69,4 @@ void OpenList::clear()
 {
 	m_openList.clear();
 }
+

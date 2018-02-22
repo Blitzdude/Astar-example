@@ -11,6 +11,7 @@
 #include "SearchLevel.h"
 // Function prototypes
 void plasmaTest();
+void drawLevel();
 
 namespace
 {
@@ -54,12 +55,17 @@ namespace
 	void doPathFinding(const uint8_t* inputData, int width, int height, uint8_t* outputData, int startX, int startY, int endX, int endY)
 	{
 		printf("STUDENT_TODO: Do path finding from <%d,%d> to <%d,%d>\n", startX, startY, endX, endY);
+	
+		
 		SearchLevel searchLevel(inputData, width, height);
 		ClosedList closedList;
 		OpenList openList;
 
 		// current node beign evaluated
 		SearchNode* current = nullptr;
+
+		// copy input data to output data
+		memcpy(outputData, inputData, 3 * width*height);
 
 		// add start position to open list, set f to 0.
 		SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::euclideanDist(startX, startY, endX, endY), 0.0f, nullptr);
@@ -74,6 +80,8 @@ namespace
 			// add the node with smallest f to closed list. 
 			current = openList.RemoveSmallestFFromOpenList();
 			closedList.addToClosedList(current);
+			// color the closed list node dark grey
+			setPixel(outputData, current->pos.first, current->pos.second, width, height, 10, 10, 10);
 
 			// if the current node is the goal
 			if (current->pos == Position(endX, endY))
@@ -83,24 +91,26 @@ namespace
 
 			// find current nodes walkable neighbors 
 			auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
-			for (auto& itr : neighbors)
+			for (auto& n_itr : neighbors)
 			{
 				// is neighbor in closed list
-				if (closedList.isInClosedList(itr))
+				if (closedList.isInClosedList(n_itr))
 				{
 					continue; // to next neighbor
 				}
 
 				// neighbor is not in open list
-				if (!openList.isInOpenList(itr))
+				if (!openList.isInOpenList(n_itr))
 				{
 					// push into openlist
 					openList.insertToOpenList(new SearchNode(
-						itr,
-						SearchLevel::euclideanDist(endX, itr.first, endY, itr.second),
+						n_itr,
+						SearchLevel::euclideanDist(endX, n_itr.first, endY, n_itr.second),
 						1.0f,
 						current
 					));
+					// color the neighbor for fun 
+					setPixel(outputData, n_itr.first, n_itr.second, width, height, 40, 40, 255);
 				}
 				// neighbor is in open list
 				else
@@ -108,19 +118,34 @@ namespace
 					/*
 					->check if current.G + neighbor.H < neighbor.F
 						true: update neigbor.F and reparent it to current.
-						false : ignore
+						false : ignore and go to next neighbor
 					*/
-					if (true) {
-
+					auto evaluateThis = openList.findFromOpenList(n_itr);
+					if ((current->G + evaluateThis->H) < evaluateThis->F) 
+					{
+						evaluateThis->resetPrev(current, 1.0f); // replace with a calculation, when doing diagonal movement
+					}
+					else 
+					{
+						continue; // go to next neighbor
 					}
 				}
 			}
-			
-
+			// draw the level between loops
+			drawLevel();
 		}
 		// A* star pathfinding - end loop
 
+		
+
 		// traverse the path and set path pixels. 
+		do {
+			// color the current node black
+			setPixel(outputData, current->pos.first, current->pos.second, width, height, 0, 0, 0);
+			// make current point to previous node
+			current = current->prevNode;
+		} while (current->pos.first != startX && current->pos.second == startY); // do, until we point to the start node, which has no parent
+		
 
 	}
 };
@@ -163,9 +188,6 @@ namespace
 		if (h) *h = height;
 		return texId;
 	}
-
-	
-
 
 	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
 	// Global variables
@@ -254,48 +276,17 @@ namespace
 	// Draw/Render
 	void draw()
 	{
+		// clear the output data
 		memset(outputData, 0, 3 * width*height);
-		//doPathFinding(inputData, width, height, outputData, startX, startY, endX, endY);
+		
 
 
 		// Run plasmatest
-		plasmaTest();
 
-		// Copy outputData to outputTexture
-		glBindTexture(GL_TEXTURE_2D, outputTexture);
-		gluBuild2DMipmaps(GL_TEXTURE_2D, 3, width, height, GL_BGR_EXT, GL_UNSIGNED_BYTE, outputData);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		// draw the level 
+		drawLevel();
 
-		glClear(GL_COLOR_BUFFER_BIT);
-
-		// Draw input texture to left half of the screen
-		glPushMatrix();
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, inputTexture);
-		glBegin(GL_QUADS);
-		glTexCoord2d(0, 1); glVertex2d(1, 1);
-		glTexCoord2d(0, 0); glVertex2d(1, 1 + 256);
-		glTexCoord2d(1, 0); glVertex2d(1 + 256, 1 + 256);
-		glTexCoord2d(1, 1); glVertex2d(1 + 256, 1);
-		glEnd();
-		glDisable(GL_TEXTURE_2D);
-		glPopMatrix();
-
-		// Draw output texture to right half of the screen
-		glPushMatrix();
-		glEnable(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, outputTexture);
-		glBegin(GL_QUADS);
-		glTexCoord2d(0, 1); glVertex2d(2 + 256, 1);
-		glTexCoord2d(0, 0); glVertex2d(2 + 256, 1 + 256);
-		glTexCoord2d(1, 0); glVertex2d(2 + 512, 1 + 256);
-		glTexCoord2d(1, 1); glVertex2d(2 + 512, 1);
-		glEnd();
-		glDisable(GL_TEXTURE_2D);
-		glPopMatrix();
-
-		glutSwapBuffers();
-		glutPostRedisplay();
+		doPathFinding(inputData, width, height, outputData, startX, startY, endX, endY);
 	}
 } // end - anonymous namespace
 
@@ -348,3 +339,42 @@ void plasmaTest() {
 }
 // Plasma Test end /////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////
+
+void drawLevel()
+{
+	// Copy outputData to outputTexture
+	glBindTexture(GL_TEXTURE_2D, outputTexture);
+	gluBuild2DMipmaps(GL_TEXTURE_2D, 3, width, height, GL_BGR_EXT, GL_UNSIGNED_BYTE, outputData);
+	glBindTexture(GL_TEXTURE_2D, 0);
+
+	glClear(GL_COLOR_BUFFER_BIT);
+
+	// Draw input texture to left half of the screen
+	glPushMatrix();
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, inputTexture);
+	glBegin(GL_QUADS);
+	glTexCoord2d(0, 1); glVertex2d(1, 1);
+	glTexCoord2d(0, 0); glVertex2d(1, 1 + 256);
+	glTexCoord2d(1, 0); glVertex2d(1 + 256, 1 + 256);
+	glTexCoord2d(1, 1); glVertex2d(1 + 256, 1);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
+
+	// Draw output texture to right half of the screen
+	glPushMatrix();
+	glEnable(GL_TEXTURE_2D);
+	glBindTexture(GL_TEXTURE_2D, outputTexture);
+	glBegin(GL_QUADS);
+	glTexCoord2d(0, 1); glVertex2d(2 + 256, 1);
+	glTexCoord2d(0, 0); glVertex2d(2 + 256, 1 + 256);
+	glTexCoord2d(1, 0); glVertex2d(2 + 512, 1 + 256);
+	glTexCoord2d(1, 1); glVertex2d(2 + 512, 1);
+	glEnd();
+	glDisable(GL_TEXTURE_2D);
+	glPopMatrix();
+
+	glutSwapBuffers();
+	glutPostRedisplay();
+}

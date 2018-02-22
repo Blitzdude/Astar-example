@@ -11,11 +11,13 @@ public:
 	float G;			  // Actual distance from the beginning point (A)
 	float H;			  // Estimated heurestic distance to end point (B)
 	float F;			  // G + H
+
 public:
 	SearchNode(const Position& currentPosition, float _H, float deltaG, SearchNode* prev);
 	~SearchNode();
 	void resetPrev(SearchNode* prev, float deltaG);
 	float distance() const;
-	static bool lessThan(SearchNode* n1, SearchNode* n2);
+	//static bool lessThan(SearchNode* n1, SearchNode* n2);
+	
 };
 
