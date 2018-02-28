@@ -1,16 +1,14 @@
 #include "SearchNode.h"
 
-
-
-SearchNode::SearchNode(const Position& currentPosition, float _H, float deltaG, SearchNode* prev) :
-	prevNode(0),
+SearchNode::SearchNode(const Position& currentPosition, float _H, float deltaG, bool truth, SearchNode* prev) :
+	prevNode(nullptr),
 	pos(currentPosition),
 	G(0), 
-	H(_H)
+	H(_H),
+	isStart(truth)
 {
 	resetPrev(prev, deltaG);
 }
-
 
 // calculate total G for this node from previous node G value. 
 // also calculates new F from new G and H
@@ -33,8 +31,6 @@ SearchNode::distance() const
 {
 	return F;
 }
-
-
 
 SearchNode::~SearchNode()
 {

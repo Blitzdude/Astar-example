@@ -68,7 +68,7 @@ namespace
 		memcpy(outputData, inputData, 3 * width*height);
 
 		// add start position to open list, set f to 0.
-		SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::manhattanDist(startX, startY, endX, endY), 0.0f, nullptr);
+		SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::manhattanDist(startX, startY, endX, endY), 0.0f, true, nullptr);
 		openList.insertToOpenList(start);
 
 		// A* star pathfinding - main loop
@@ -106,6 +106,7 @@ namespace
 						n_itr,
 						SearchLevel::manhattanDist(endX, n_itr.first, endY, n_itr.second),
 						1.0f,
+						false,
 						current
 					));
 					// color the neighbor for fun 
@@ -129,6 +130,7 @@ namespace
 						continue; // go to next neighbor
 					}
 				}
+				
 			}
 			// draw the level between loops
 			drawLevel();
@@ -141,9 +143,9 @@ namespace
 		do {
 			drawLevel();
 			// color the current node black
-			setPixel(outputData, current->pos.first, current->pos.second, width, height, 0, 255, 0);
+			setPixel(outputData, current->pos.first, current->pos.second, width, height, 0, 20, 0);
 			// make current point to previous node
-			current = ;
+			current = current->prevNode;
 		} while (current->prevNode != nullptr); // do, until we point to the start node, which has no parent
 		
 
