@@ -2,16 +2,23 @@
 
 
 
-SearchLevel::SearchLevel(const uint8_t* inputData, int width, int height) : 
-	m_levelData(inputData), 
-	m_levelWidth(width),
-	m_levelHeight(height)
+SearchLevel::SearchLevel() 
 {
 }
 
 
 SearchLevel::~SearchLevel()
 {
+}
+
+bool SearchLevel::init(const uint8_t* inputData, int width, int height)
+{
+	m_levelData = inputData;
+	if (m_levelData == 0)
+		return false;
+	m_levelWidth = width;
+	m_levelHeight = height;
+	return true;
 }
 
 float SearchLevel::getDeltaG(SearchNode* fromNode, SearchNode* toNode) // SearchNode * fromPos, SearchNode * toPos ?

@@ -13,6 +13,34 @@
 void plasmaTest();
 void drawLevel();
 
+// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
+// Global variables
+
+// OpenGL texture ids for rendering.
+GLuint  inputTexture = 0;
+GLuint  outputTexture = 0;
+// Input and output data in pixels. outputData is updated to outputTexture each frame
+uint8_t* inputData = 0;
+uint8_t* outputData = 0;
+// width and height of the input and output datas
+int width = 0;
+int height = 0;
+// start and end position for path finding. These are found automatically from input file.
+int startX = -1;
+int startY = -1;
+int endX = -1;
+int endY = -1;
+
+SearchLevel searchLevel;
+ClosedList closedList;
+OpenList openList;
+// current node beign evaluated
+SearchNode* current = nullptr;
+
+bool isPathFound = false;
+bool isPathingStarted = false;
+
+
 namespace
 {
 	// Sets a pixel of rgb color into memory
@@ -52,103 +80,111 @@ namespace
 
 
 	*/
-	void doPathFinding(const uint8_t* inputData, int width, int height, uint8_t* outputData, int startX, int startY, int endX, int endY)
+	void doPathFinding(int startX, int startY, int endX, int endY)
 	{
-		printf("STUDENT_TODO: Do path finding from <%d,%d> to <%d,%d>\n", startX, startY, endX, endY);
+		//printf("STUDENT_TODO: Do path finding from <%d,%d> to <%d,%d>\n", startX, startY, endX, endY);
 	
 		
-		SearchLevel searchLevel(inputData, width, height);
-		ClosedList closedList;
-		OpenList openList;
-
-		// current node beign evaluated
-		SearchNode* current = nullptr;
-
 		// copy input data to output data
-		memcpy(outputData, inputData, 3 * width*height);
+		//memcpy(outputData, inputData, 3 * width*height);
 
-		// add start position to open list, set f to 0.
-		SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::manhattanDist(startX, startY, endX, endY), 0.0f, true, nullptr);
-		openList.insertToOpenList(start);
+		// if pathfinding has not yet been started, insert the first node to open list
+		if (!isPathingStarted)
+		{
+			// add start position to open list, set f to 0.
+			SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::euclideanDist(startX, startY, endX, endY), 0.0f, nullptr);
+			openList.insertToOpenList(start);
+			isPathingStarted = true;
+		}
 
 		// A* star pathfinding - main loop
-		while (!openList.isEmpty())
+		if (!openList.isEmpty() && !isPathFound)
 		{
-			// sort the open list
-			openList.sortOpenList();
-
 			// add the node with smallest f to closed list. 
 			current = openList.RemoveSmallestFFromOpenList();
 			closedList.addToClosedList(current);
 			
-
 			// if the current node is the goal
 			if (current->pos == Position(endX, endY))
 			{
-				break; // path found, break while loop
+				// path found, set flag
+				isPathFound = true;
 			}
 
-			// find current nodes walkable neighbors 
-			auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
-			for (auto& n_itr : neighbors)
+			if (!isPathFound) // check the neighbors only if the path has not been found yet
 			{
-				// is neighbor in closed list
-				if (closedList.isInClosedList(n_itr))
+				// find current nodes walkable neighbors 
+				auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
+				for (auto& n_itr : neighbors)
 				{
-					continue; // to next neighbor
-				}
+					// is neighbor in closed list
+					if (closedList.isInClosedList(n_itr))
+					{
+						continue; // to next neighbor
+					}
 
-				// neighbor is not in open list
-				if (!openList.isInOpenList(n_itr))
-				{
-					// push into openlist
-					openList.insertToOpenList(new SearchNode(
-						n_itr,
-						SearchLevel::manhattanDist(endX, n_itr.first, endY, n_itr.second),
-						1.0f,
-						false,
-						current
-					));
-					// color the neighbor for fun 
-					setPixel(outputData, n_itr.first, n_itr.second, width, height, 40, 40, 255);
-				}
-				// neighbor is in open list
-				else
-				{
-					/*
-					->check if current.G + neighbor.H < neighbor.F
+					// neighbor is not in open list
+					if (!openList.isInOpenList(n_itr))
+					{
+						// push into openlist
+						openList.insertToOpenList(new SearchNode(
+							n_itr,
+							SearchLevel::euclideanDist(n_itr.first, n_itr.second, endX, endY),
+							1.0f,
+							current
+						));
+						// color the neighbor for fun 
+						setPixel(outputData, n_itr.first, n_itr.second, width, height, 0, 0, 255);
+					}
+					// neighbor is in open list
+					else
+					{
+						/*
+						->check if current.G + neighbor.H < neighbor.F
 						true: update neigbor.F and reparent it to current.
 						false : ignore and go to next neighbor
-					*/
-					auto evaluateThis = openList.findFromOpenList(n_itr);
-					if ((current->G + evaluateThis->H) < evaluateThis->F) 
-					{
-						evaluateThis->resetPrev(current, 1.0f); // replace with a calculation, when doing diagonal movement
+						*/
+						auto evaluateThis = openList.findFromOpenList(n_itr);
+						if ((current->G + evaluateThis->H) < evaluateThis->F)
+						{
+							evaluateThis->resetPrev(current, 1.0f); // replace with a calculation, when doing diagonal movement
+						}
+						else
+						{
+							continue; // go to next neighbor
+						}
 					}
-					else 
-					{
-						continue; // go to next neighbor
-					}
+
 				}
-				
+				// sort the open list
+				openList.sortOpenList();
 			}
-			// draw the level between loops
-			drawLevel();
+
+			
+			
 		}
 		// A* star pathfinding - end loop
 
-		// clear the left side
-		memcpy(outputData, inputData, 3 * width*height);
-		// traverse the path and set path pixels. 
-		do {
-			drawLevel();
-			// color the current node black
-			setPixel(outputData, current->pos.first, current->pos.second, width, height, 0, 20, 0);
-			// make current point to previous node
-			current = current->prevNode;
-		} while (current->prevNode != nullptr); // do, until we point to the start node, which has no parent
+		if (openList.isEmpty() && isPathingStarted)
+		{
+			printf("No path found \n");
+		}
 		
+		// traverse the path and set path pixels. 
+		if (isPathFound)
+		{
+			// clear the left side
+			memcpy(outputData, inputData, 3 * width*height);
 
+			// ERROR: Eternally looping, prev node pointing doesn't work
+			do { 
+				
+				// color the current node black
+				setPixel(outputData, current->pos.first, current->pos.second, width, height, 0, 20, 0);
+				// make current point to previous node
+				current = current->prevNode;
+			} while (current->pos != Position(startX, startY)); // do, until we point to the start node, which has no parent
+		}
 	}
 };
 
@@ -191,23 +227,7 @@ namespace
 		return texId;
 	}
 
-	// =-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=
-	// Global variables
-
-	// OpenGL texture ids for rendering.
-	GLuint  inputTexture = 0;
-	GLuint  outputTexture = 0;
-	// Input and output data in pixels. outputData is updated to outputTexture each frame
-	uint8_t* inputData = 0;
-	uint8_t* outputData = 0;
-	// width and height of the input and output datas
-	int width = 0;
-	int height = 0;
-	// start and end position for path finding. These are found automatically from input file.
-	int startX = -1;
-	int startY = -1;
-	int endX = -1;
-	int endY = -1;
+	
 
 	// Initialization
 	bool init()
@@ -229,6 +249,9 @@ namespace
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
+
+		// copy input data to searchlevel
+		searchLevel.init(inputData, width, height);
 
 		// Copy inputData also to outputData
 		outputData = new uint8_t[3 * width*height];
@@ -271,6 +294,7 @@ namespace
 			printf("Error! End position not found\n");
 			return false;
 		}
+		
 
 		return true;
 	}
@@ -279,16 +303,14 @@ namespace
 	void draw()
 	{
 		// clear the output data
-		memset(outputData, 0, 3 * width*height);
+		//memset(outputData, 0, 3 * width*height);
 		
-
-
 		// Run plasmatest
 
 		// draw the level 
-		drawLevel();
+		doPathFinding(startX, startY, endX, endY);
 
-		doPathFinding(inputData, width, height, outputData, startX, startY, endX, endY);
+		drawLevel();
 	}
 } // end - anonymous namespace
 

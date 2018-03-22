@@ -3,11 +3,14 @@
 #include "ClosedList.h"
 #include "SearchNode.h"
 
+
 class SearchLevel
 {
 public:
-	SearchLevel(const uint8_t* inputData, int width, int height);
+	SearchLevel();
 	~SearchLevel();
+
+	bool init(const uint8_t* inputData, int width, int height);
 
 	float getDeltaG(SearchNode* fromNode, SearchNode* toNode);
 	float getH(SearchNode* fromPos, SearchNode* toPos);
@@ -18,8 +21,9 @@ public:
 		return sqrt(double((a - c) * (a - c) + (b - d) * (b - d)));
 	}
 
-	static double manhattanDist(double a, double b, double c, double d) { // block distance
-		return double((a - c) + (b - d));
+	static double manhattanDist(double aX, double aY, double bX, double bY) { // block distance
+
+		return abs(aX - bX) + abs(aY - bY);
 	}
 private:
 	bool isWalkable(int x, int y);

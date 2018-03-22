@@ -14,11 +14,10 @@ public:
 	SearchNode* RemoveSmallestFFromOpenList();
 	bool isEmpty();
 	void clear();
-
+	
 	
 private:
+	//bool isFGreater(SearchNode &n1, SearchNode &n2) { return n1.F > n2.F; };
 	std::vector<SearchNode> m_openList;
-
-	
 };
 

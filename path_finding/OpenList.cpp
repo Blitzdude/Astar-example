@@ -31,10 +31,9 @@ void OpenList::insertToOpenList(SearchNode * n)
 
 void OpenList::sortOpenList()
 {
-	std::sort(m_openList.begin(), m_openList.end(), [](const SearchNode& n1, const SearchNode& n2) -> bool
-	{
-		return (n1.F > n2.F);
-	});
+	std::sort(m_openList.begin(), m_openList.end(), [](const SearchNode &lhs, const SearchNode &rhs)
+	{ return lhs.F > rhs.F; });
+	
 	// DEBUG
 	/*
 	for (auto& it : m_openList)
@@ -69,4 +68,3 @@ void OpenList::clear()
 {
 	m_openList.clear();
 }
-

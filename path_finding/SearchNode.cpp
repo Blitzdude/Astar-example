@@ -1,11 +1,10 @@
 #include "SearchNode.h"
 
-SearchNode::SearchNode(const Position& currentPosition, float _H, float deltaG, bool truth, SearchNode* prev) :
+SearchNode::SearchNode(const Position& currentPosition, float _H, float deltaG, SearchNode* prev) :
 	prevNode(nullptr),
 	pos(currentPosition),
 	G(0), 
-	H(_H),
-	isStart(truth)
+	H(_H)
 {
 	resetPrev(prev, deltaG);
 }
