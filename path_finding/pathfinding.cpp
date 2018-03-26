@@ -4,6 +4,7 @@
 #include <assert.h>
 #include <glut/glut.h>
 #include <memory.h>
+#include <iostream>
 
 #include "ClosedList.h"
 #include "OpenList.h"
@@ -23,8 +24,8 @@ GLuint  outputTexture = 0;
 uint8_t* inputData = 0;
 uint8_t* outputData = 0;
 // width and height of the input and output datas
-int width = 0;
-int height = 0;
+int levelWidth = 0;
+int levelHeight = 0;
 // start and end position for path finding. These are found automatically from input file.
 int startX = -1;
 int startY = -1;
@@ -36,6 +37,7 @@ ClosedList closedList;
 OpenList openList;
 // current node beign evaluated
 SearchNode* current = nullptr;
+SearchNode* previous = nullptr;
 
 bool isPathFound = false;
 bool isPathingStarted = false;
@@ -50,6 +52,7 @@ namespace
 		pixel[0] = b;
 		pixel[1] = g;
 		pixel[2] = r;
+		
 	}
 
 	double dist(double a, double b, double c, double d) { // pythagorian distance
@@ -84,7 +87,6 @@ namespace
 	{
 		//printf("STUDENT_TODO: Do path finding from <%d,%d> to <%d,%d>\n", startX, startY, endX, endY);
 	
-		
 		// copy input data to output data
 		//memcpy(outputData, inputData, 3 * width*height);
 
@@ -100,10 +102,25 @@ namespace
 		// A* star pathfinding - main loop
 		if (!openList.isEmpty() && !isPathFound)
 		{
+			previous = current;
+
+			// sort the open list
+			openList.sortOpenList();
+
 			// add the node with smallest f to closed list. 
 			current = openList.RemoveSmallestFFromOpenList();
 			closedList.addToClosedList(current);
+
+			setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 255, 0, 0);
+
+			// change previous nodes color
 			
+			if (previous != nullptr) {
+				setPixel(outputData, previous->pos.first, previous->pos.second, levelWidth, levelHeight, 255, 0, 255);
+			}
+			
+			std::cout << "current x, y: " << current->pos.first << " " << current->pos.second << std::endl;
+
 			// if the current node is the goal
 			if (current->pos == Position(endX, endY))
 			{
@@ -113,9 +130,10 @@ namespace
 
 			if (!isPathFound) // check the neighbors only if the path has not been found yet
 			{
+
 				// find current nodes walkable neighbors 
 				auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
-				for (auto& n_itr : neighbors)
+				for (auto n_itr : neighbors)
 				{
 					// is neighbor in closed list
 					if (closedList.isInClosedList(n_itr))
@@ -133,8 +151,9 @@ namespace
 							1.0f,
 							current
 						));
+
 						// color the neighbor for fun 
-						setPixel(outputData, n_itr.first, n_itr.second, width, height, 0, 0, 255);
+						setPixel(outputData, n_itr.first, n_itr.second, levelWidth, levelHeight, 0, 0, 255);
 					}
 					// neighbor is in open list
 					else
@@ -154,14 +173,11 @@ namespace
 							continue; // go to next neighbor
 						}
 					}
-
 				}
-				// sort the open list
-				openList.sortOpenList();
+				
+				
 			}
 
-			
-			
 		}
 		// A* star pathfinding - end loop
 
@@ -174,14 +190,15 @@ namespace
 		if (isPathFound)
 		{
 			// clear the left side
-			memcpy(outputData, inputData, 3 * width*height);
+			memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
 
 			// ERROR: Eternally looping, prev node pointing doesn't work
 			do { 
 				
 				// color the current node black
-				setPixel(outputData, current->pos.first, current->pos.second, width, height, 0, 20, 0);
+				setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 0, 20, 0);
 				// make current point to previous node
+				assert(current != current->prevNode);
 				current = current->prevNode;
 			} while (current->pos != Position(startX, startY)); // do, until we point to the start node, which has no parent
 		}
@@ -236,7 +253,7 @@ namespace
 		glOrtho(0, 512 + 4, 256 + 2, 0, -1, 1);
 
 		// Load input file
-		inputTexture = loadBMPTexture("input2.bmp", &width, &height, &inputData);
+		inputTexture = loadBMPTexture("input2.bmp", &levelWidth, &levelHeight, &inputData);
 		if (0 == inputTexture)
 		{
 			printf("Error! Cannot open file: \"input2.bmp\"\n");
@@ -251,18 +268,18 @@ namespace
 		glBindTexture(GL_TEXTURE_2D, 0);
 
 		// copy input data to searchlevel
-		searchLevel.init(inputData, width, height);
+		searchLevel.init(inputData, levelWidth, levelHeight);
 
 		// Copy inputData also to outputData
-		outputData = new uint8_t[3 * width*height];
-		memcpy(outputData, inputData, 3 * width*height);
+		outputData = new uint8_t[3 * levelWidth*levelHeight];
+		memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
 
 		// find start and end
-		for (int y = 0; y < height; ++y)
+		for (int y = 0; y < levelHeight; ++y)
 		{
-			for (int x = 0; x < width; ++x)
+			for (int x = 0; x < levelWidth; ++x)
 			{
-				uint8_t* pix = &inputData[3 * (y*width + x)]; // get pixel
+				uint8_t* pix = &inputData[3 * (y*levelWidth + x)]; // get pixel
 				uint8_t r = pix[0];
 				uint8_t g = pix[1];
 				uint8_t b = pix[2];
@@ -295,7 +312,6 @@ namespace
 			return false;
 		}
 		
-
 		return true;
 	}
 
@@ -337,8 +353,8 @@ void plasmaTest() {
 	static double time = 10.0;
 
 	time += 0.5;
-	for (int y = 0; y < height; y++)
-		for (int x = 0; x < width; x++)
+	for (int y = 0; y < levelHeight; y++)
+		for (int x = 0; x < levelWidth; x++)
 		{
 			double value = sin(dist(x + time, y, 128.0, 128.0) / 8.0)
 				+ sin(dist(x, y, 64.0, 64.0) / 8.0)
@@ -358,7 +374,7 @@ void plasmaTest() {
 				+ cos(dist(x, y, 192.0, 100.0) / 8.0);
 			int color3 = int((4 + value)) * 32;
 
-			setPixel(outputData, x, y, width, height, color1, color2, color3);
+			setPixel(outputData, x, y, levelWidth, levelHeight, color1, color2, color3);
 		}
 }
 // Plasma Test end /////////////////////////////////////////////////
@@ -368,7 +384,7 @@ void drawLevel()
 {
 	// Copy outputData to outputTexture
 	glBindTexture(GL_TEXTURE_2D, outputTexture);
-	gluBuild2DMipmaps(GL_TEXTURE_2D, 3, width, height, GL_BGR_EXT, GL_UNSIGNED_BYTE, outputData);
+	gluBuild2DMipmaps(GL_TEXTURE_2D, 3, levelWidth, levelHeight, GL_BGR_EXT, GL_UNSIGNED_BYTE, outputData);
 	glBindTexture(GL_TEXTURE_2D, 0);
 
 	glClear(GL_COLOR_BUFFER_BIT);

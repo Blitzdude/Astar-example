@@ -17,6 +17,7 @@ public:
 	
 	std::vector<Position> getAdjacentNodes(int posX, int posY);
 
+
 	static double euclideanDist(double a, double b, double c, double d) { // pythagorian distance
 		return sqrt(double((a - c) * (a - c) + (b - d) * (b - d)));
 	}
