@@ -2,6 +2,14 @@
 #include <algorithm>
 #include <iostream>
 
+namespace {
+bool compareGreater(const SearchNode &a, const SearchNode &b)
+{
+	return a.F > b.F;
+}
+
+}
+
 OpenList::OpenList()
 {
 }
@@ -11,12 +19,12 @@ OpenList::~OpenList()
 {
 }
 
-SearchNode * OpenList::findFromOpenList(Position pos)
-{
-	auto itr = m_openList.begin();
-	for (; itr != m_openList.end(); itr++) {
 
-		if ((itr->pos.first == pos.first) && (itr->pos.second == pos.second))
+const SearchNode * OpenList::findFromOpenList(Position pos)
+{
+	for (auto itr = m_openList.begin(); itr != m_openList.end(); itr++) {
+
+		if (itr->pos.first == pos.first && itr->pos.second == pos.second)
 		{
 			return &(*itr);
 		}
@@ -31,17 +39,18 @@ void OpenList::insertToOpenList(SearchNode * n)
 
 void OpenList::sortOpenList()
 {
-	std::sort(m_openList.begin(), m_openList.end(), [](const SearchNode &lhs, const SearchNode &rhs)
-	{ return lhs.F > rhs.F; });
+	std::sort(m_openList.begin(), m_openList.end(), compareGreater);/*, [](const SearchNode &lhs, const SearchNode &rhs)
+	{ return lhs.F > rhs.F; });*/
 	
 	// DEBUG
 	/*
 	for (auto& it : m_openList)
 	{
-		std::cout << it.F << std::endl;
+		std::cout << " " << it.F << " " << std::endl;
 	}
 	std::cout << "\n\n";
 	*/
+	
 }
 
 bool OpenList::isInOpenList(Position pos)
@@ -68,3 +77,4 @@ void OpenList::clear()
 {
 	m_openList.clear();
 }
+

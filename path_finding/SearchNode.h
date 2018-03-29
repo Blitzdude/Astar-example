@@ -3,6 +3,10 @@
 
 typedef std::pair<int, int> Position;
 
+
+
+
+
 class SearchNode
 {
 public:

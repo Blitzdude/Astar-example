@@ -37,7 +37,7 @@ ClosedList closedList;
 OpenList openList;
 // current node beign evaluated
 SearchNode* current = nullptr;
-SearchNode* previous = nullptr;
+SearchNode* whyUnoWork = nullptr;
 
 bool isPathFound = false;
 bool isPathingStarted = false;
@@ -90,20 +90,24 @@ namespace
 		// copy input data to output data
 		//memcpy(outputData, inputData, 3 * width*height);
 
+		// clear the left side
+		memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
+
+
 		// if pathfinding has not yet been started, insert the first node to open list
 		if (!isPathingStarted)
 		{
 			// add start position to open list, set f to 0.
-			SearchNode* start = new SearchNode(Position(startX, startY), SearchLevel::euclideanDist(startX, startY, endX, endY), 0.0f, nullptr);
+			SearchNode* start = new SearchNode(Position(startX, startY), dist(startX, startY, endX, endY), 0.0f, nullptr);
 			openList.insertToOpenList(start);
 			isPathingStarted = true;
 		}
 
+		
+
 		// A* star pathfinding - main loop
 		if (!openList.isEmpty() && !isPathFound)
 		{
-			previous = current;
-
 			// sort the open list
 			openList.sortOpenList();
 
@@ -111,28 +115,49 @@ namespace
 			current = openList.RemoveSmallestFFromOpenList();
 			closedList.addToClosedList(current);
 
-			setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 255, 0, 0);
+			if (current->prevNode != nullptr) {
 
-			// change previous nodes color
-			
-			if (previous != nullptr) {
-				setPixel(outputData, previous->pos.first, previous->pos.second, levelWidth, levelHeight, 255, 0, 255);
+				assert(current->prevNode->pos.first >= 0 && current->prevNode->pos.first < 1000);
+				assert(current->prevNode->pos.second >= 0 && current->prevNode->pos.second < 1000);
 			}
-			
+
 			std::cout << "current x, y: " << current->pos.first << " " << current->pos.second << std::endl;
+			if (current->prevNode)
+				std::cout << "previous x, y: " << current->prevNode->pos.first << " " << current->prevNode->pos.second << std::endl;
+
+
+			// coloring here
+			///////////////////////////////////////////
+
+			// color open list nodes magenta
+			for (auto itr : openList.getList())
+			{
+				setPixel(outputData, itr.pos.first, itr.pos.second, levelWidth, levelHeight, 255, 0, 255);
+			}
+
+			// color closed list blue
+			for (auto itr : closedList.getList()) {
+				setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight, 40, 40, 255);
+			}
+
+			// color current node yellow
+			setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 255, 255, 0);
 
 			// if the current node is the goal
-			if (current->pos == Position(endX, endY))
+			if (current->pos.first == endX && current->pos.second == endY)
 			{
 				// path found, set flag
 				isPathFound = true;
 			}
+
+			//////////////////////////////////////////
 
 			if (!isPathFound) // check the neighbors only if the path has not been found yet
 			{
 
 				// find current nodes walkable neighbors 
 				auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
+				
 				for (auto n_itr : neighbors)
 				{
 					// is neighbor in closed list
@@ -147,13 +172,14 @@ namespace
 						// push into openlist
 						openList.insertToOpenList(new SearchNode(
 							n_itr,
-							SearchLevel::euclideanDist(n_itr.first, n_itr.second, endX, endY),
+							dist(n_itr.first, n_itr.second, endX, endY),
 							1.0f,
 							current
 						));
 
-						// color the neighbor for fun 
-						setPixel(outputData, n_itr.first, n_itr.second, levelWidth, levelHeight, 0, 0, 255);
+						//assert(n_itr.first >= 0 && n_itr.first < 1000);
+						//assert(n_itr.second >= 0 && n_itr.second < 1000);
+
 					}
 					// neighbor is in open list
 					else
@@ -163,10 +189,11 @@ namespace
 						true: update neigbor.F and reparent it to current.
 						false : ignore and go to next neighbor
 						*/
+						// BUG
 						auto evaluateThis = openList.findFromOpenList(n_itr);
 						if ((current->G + evaluateThis->H) < evaluateThis->F)
 						{
-							evaluateThis->resetPrev(current, 1.0f); // replace with a calculation, when doing diagonal movement
+							evaluateThis->resetPrev(current, 1.0f);
 						}
 						else
 						{
@@ -174,10 +201,8 @@ namespace
 						}
 					}
 				}
-				
-				
-			}
 
+			}
 		}
 		// A* star pathfinding - end loop
 
@@ -194,14 +219,15 @@ namespace
 
 			// ERROR: Eternally looping, prev node pointing doesn't work
 			do { 
-				
 				// color the current node black
 				setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 0, 20, 0);
 				// make current point to previous node
 				assert(current != current->prevNode);
 				current = current->prevNode;
-			} while (current->pos != Position(startX, startY)); // do, until we point to the start node, which has no parent
+			} while (current->pos.first != startX && current->pos.second != startY); // do, until we point to the start node, which has no parent
 		}
+
+		
 	}
 };
 
@@ -250,7 +276,9 @@ namespace
 	bool init()
 	{
 		glMatrixMode(GL_PROJECTION);
-		glOrtho(0, 512 + 4, 256 + 2, 0, -1, 1);
+		
+		//glOrtho(0, 512 + 4, 256 + 2, 0, -1, 1); //for original input
+		glOrtho(0, 128 + 4, 64 + 2, 0, -1, 1);
 
 		// Load input file
 		inputTexture = loadBMPTexture("input2.bmp", &levelWidth, &levelHeight, &inputData);
@@ -394,10 +422,16 @@ void drawLevel()
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, inputTexture);
 	glBegin(GL_QUADS);
+	/*
 	glTexCoord2d(0, 1); glVertex2d(1, 1);
 	glTexCoord2d(0, 0); glVertex2d(1, 1 + 256);
 	glTexCoord2d(1, 0); glVertex2d(1 + 256, 1 + 256);
 	glTexCoord2d(1, 1); glVertex2d(1 + 256, 1);
+	*/
+	glTexCoord2d(0, 1); glVertex2d(1, 1);
+	glTexCoord2d(0, 0); glVertex2d(1, 1 + 64);
+	glTexCoord2d(1, 0); glVertex2d(1 + 64, 1 + 64);
+	glTexCoord2d(1, 1); glVertex2d(1 + 64, 1);
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
@@ -407,10 +441,16 @@ void drawLevel()
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, outputTexture);
 	glBegin(GL_QUADS);
+	/*
 	glTexCoord2d(0, 1); glVertex2d(2 + 256, 1);
 	glTexCoord2d(0, 0); glVertex2d(2 + 256, 1 + 256);
 	glTexCoord2d(1, 0); glVertex2d(2 + 512, 1 + 256);
 	glTexCoord2d(1, 1); glVertex2d(2 + 512, 1);
+	*/
+	glTexCoord2d(0, 1); glVertex2d(2 + 64, 1);
+	glTexCoord2d(0, 0); glVertex2d(2 + 64, 1 + 64);
+	glTexCoord2d(1, 0); glVertex2d(2 + 128, 1 + 64);
+	glTexCoord2d(1, 1); glVertex2d(2 + 128, 1);
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
