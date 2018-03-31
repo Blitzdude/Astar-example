@@ -17,20 +17,25 @@ public:
 	
 	std::vector<Position> getAdjacentNodes(int posX, int posY);
 
-
 	static double euclideanDist(double a, double b, double c, double d) { // pythagorian distance
 		return sqrt(double((a - c) * (a - c) + (b - d) * (b - d)));
 	}
 
 	static double manhattanDist(double aX, double aY, double bX, double bY) { // block distance
 
-		return abs(aX - bX) + abs(aY - bY);
+		float x = (float)fabs(aX - bX);
+		float y = (float)fabs(aY - bY);
+		return x + y;
 	}
 private:
 	bool isWalkable(int x, int y);
 
+
 	const uint8_t* m_levelData;
 	int m_levelWidth;
 	int m_levelHeight;
+
+	SearchNode *m_start = nullptr;
+	SearchNode *m_end = nullptr;
 };
 

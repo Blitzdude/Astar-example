@@ -36,11 +36,12 @@ SearchLevel searchLevel;
 ClosedList closedList;
 OpenList openList;
 // current node beign evaluated
-SearchNode* current = nullptr;
-SearchNode* whyUnoWork = nullptr;
+//SearchNode* current = nullptr;
+//SearchNode* whyUnoWork = nullptr;
 
 bool isPathFound = false;
 bool isPathingStarted = false;
+bool isDone = false;
 
 
 namespace
@@ -90,9 +91,9 @@ namespace
 		// copy input data to output data
 		//memcpy(outputData, inputData, 3 * width*height);
 
-		// clear the left side
-		memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
+		
 
+		SearchNode* current = nullptr;
 
 		// if pathfinding has not yet been started, insert the first node to open list
 		if (!isPathingStarted)
@@ -108,11 +109,14 @@ namespace
 		// A* star pathfinding - main loop
 		if (!openList.isEmpty() && !isPathFound)
 		{
+			// clear the left side
+			memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
+
 			// sort the open list
 			openList.sortOpenList();
 
-			// add the node with smallest f to closed list. 
 			current = openList.RemoveSmallestFFromOpenList();
+			// add the node with smallest f to closed list. 
 			closedList.addToClosedList(current);
 
 			if (current->prevNode != nullptr) {
@@ -121,10 +125,6 @@ namespace
 				assert(current->prevNode->pos.second >= 0 && current->prevNode->pos.second < 1000);
 			}
 
-			std::cout << "current x, y: " << current->pos.first << " " << current->pos.second << std::endl;
-			if (current->prevNode)
-				std::cout << "previous x, y: " << current->prevNode->pos.first << " " << current->prevNode->pos.second << std::endl;
-
 
 			// coloring here
 			///////////////////////////////////////////
@@ -132,12 +132,24 @@ namespace
 			// color open list nodes magenta
 			for (auto itr : openList.getList())
 			{
-				setPixel(outputData, itr.pos.first, itr.pos.second, levelWidth, levelHeight, 255, 0, 255);
+				setPixel(outputData, itr->pos.first, itr->pos.second, levelWidth, levelHeight, 126, 0, 126);
 			}
 
-			// color closed list blue
+			// color closed lists according to F
 			for (auto itr : closedList.getList()) {
-				setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight, 40, 40, 255);
+				/*
+				setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
+					(itr.second->getF() / (levelWidth+levelHeight + 256)) * 126.0f, 
+					(itr.second->getF() / (levelWidth+levelHeight + 256)) * 256.0f,
+					(itr.second->getF() / (levelWidth+levelHeight + 256)) * 64.0f
+				);
+				*/
+				
+				setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
+					itr.second->getF() ,
+					itr.second->G,
+					itr.second->H
+				);
 			}
 
 			// color current node yellow
@@ -172,13 +184,11 @@ namespace
 						// push into openlist
 						openList.insertToOpenList(new SearchNode(
 							n_itr,
-							dist(n_itr.first, n_itr.second, endX, endY),
-							1.0f,
+							SearchLevel::manhattanDist(n_itr.first, n_itr.second, endX, endY),
+							SearchLevel::euclideanDist(current->pos.first, current->pos.second, n_itr.first, n_itr.second),
 							current
 						));
-
-						//assert(n_itr.first >= 0 && n_itr.first < 1000);
-						//assert(n_itr.second >= 0 && n_itr.second < 1000);
+						printf("**added to openlist**: %d\n\n", openList.getList().size());
 
 					}
 					// neighbor is in open list
@@ -189,9 +199,8 @@ namespace
 						true: update neigbor.F and reparent it to current.
 						false : ignore and go to next neighbor
 						*/
-						// BUG
 						auto evaluateThis = openList.findFromOpenList(n_itr);
-						if ((current->G + evaluateThis->H) < evaluateThis->F)
+						if ((current->G + evaluateThis->H) < evaluateThis->getF())
 						{
 							evaluateThis->resetPrev(current, 1.0f);
 						}
@@ -212,10 +221,10 @@ namespace
 		}
 		
 		// traverse the path and set path pixels. 
-		if (isPathFound)
+		if (isPathFound && !isDone)
 		{
 			// clear the left side
-			memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
+			//memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
 
 			// ERROR: Eternally looping, prev node pointing doesn't work
 			do { 
@@ -224,10 +233,10 @@ namespace
 				// make current point to previous node
 				assert(current != current->prevNode);
 				current = current->prevNode;
-			} while (current->pos.first != startX && current->pos.second != startY); // do, until we point to the start node, which has no parent
-		}
+			} while (current != nullptr); // do, until we point to the start node, which has no parent
 
-		
+			isDone = true; // if done, just draw
+		}
 	}
 };
 
@@ -277,11 +286,11 @@ namespace
 	{
 		glMatrixMode(GL_PROJECTION);
 		
-		//glOrtho(0, 512 + 4, 256 + 2, 0, -1, 1); //for original input
-		glOrtho(0, 128 + 4, 64 + 2, 0, -1, 1);
+		glOrtho(0, 512 + 4, 256 + 2, 0, -1, 1); //for original input
+		//glOrtho(0, 128 + 4, 64 + 2, 0, -1, 1);
 
 		// Load input file
-		inputTexture = loadBMPTexture("input2.bmp", &levelWidth, &levelHeight, &inputData);
+		inputTexture = loadBMPTexture("input.bmp", &levelWidth, &levelHeight, &inputData);
 		if (0 == inputTexture)
 		{
 			printf("Error! Cannot open file: \"input2.bmp\"\n");
@@ -295,8 +304,10 @@ namespace
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		// copy input data to searchlevel
-		searchLevel.init(inputData, levelWidth, levelHeight);
+		if (searchLevel.init(inputData, levelWidth, levelHeight ))
+		{
+			printf("failed to init searchlevel\n");
+		}
 
 		// Copy inputData also to outputData
 		outputData = new uint8_t[3 * levelWidth*levelHeight];
@@ -422,16 +433,17 @@ void drawLevel()
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, inputTexture);
 	glBegin(GL_QUADS);
+	
+	glTexCoord2d(0, 1); glVertex2d(1, 1);
+	glTexCoord2d(0, 0); glVertex2d(1, 1 + (levelHeight * 2));
+	glTexCoord2d(1, 0); glVertex2d(1 + (levelWidth * 2), 1 + (levelHeight * 2));
+	glTexCoord2d(1, 1); glVertex2d(1 + (levelWidth * 2), 1);
 	/*
 	glTexCoord2d(0, 1); glVertex2d(1, 1);
-	glTexCoord2d(0, 0); glVertex2d(1, 1 + 256);
-	glTexCoord2d(1, 0); glVertex2d(1 + 256, 1 + 256);
-	glTexCoord2d(1, 1); glVertex2d(1 + 256, 1);
-	*/
-	glTexCoord2d(0, 1); glVertex2d(1, 1);
-	glTexCoord2d(0, 0); glVertex2d(1, 1 + 64);
+	glTexCoord2d(0, 0); glVertex2d(1, 1);
 	glTexCoord2d(1, 0); glVertex2d(1 + 64, 1 + 64);
 	glTexCoord2d(1, 1); glVertex2d(1 + 64, 1);
+	*/
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();
@@ -441,16 +453,17 @@ void drawLevel()
 	glEnable(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, outputTexture);
 	glBegin(GL_QUADS);
+	
+	glTexCoord2d(0, 1); glVertex2d(2 + (levelWidth * 2), 1);
+	glTexCoord2d(0, 0); glVertex2d(2 + (levelWidth * 2), 1 + (levelHeight * 2));
+	glTexCoord2d(1, 0); glVertex2d(2 + (levelWidth * 4), 1 + (levelHeight * 2));
+	glTexCoord2d(1, 1); glVertex2d(2 + (levelWidth * 4), 1);
 	/*
-	glTexCoord2d(0, 1); glVertex2d(2 + 256, 1);
-	glTexCoord2d(0, 0); glVertex2d(2 + 256, 1 + 256);
-	glTexCoord2d(1, 0); glVertex2d(2 + 512, 1 + 256);
-	glTexCoord2d(1, 1); glVertex2d(2 + 512, 1);
-	*/
 	glTexCoord2d(0, 1); glVertex2d(2 + 64, 1);
 	glTexCoord2d(0, 0); glVertex2d(2 + 64, 1 + 64);
 	glTexCoord2d(1, 0); glVertex2d(2 + 128, 1 + 64);
 	glTexCoord2d(1, 1); glVertex2d(2 + 128, 1);
+	*/
 	glEnd();
 	glDisable(GL_TEXTURE_2D);
 	glPopMatrix();

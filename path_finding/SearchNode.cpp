@@ -1,12 +1,11 @@
 #include "SearchNode.h"
 #include <assert.h>
 
-SearchNode::SearchNode(Position currentPosition, float _H, float deltaG, SearchNode* prev) :
+SearchNode::SearchNode(Position _position, float _H, float deltaG, SearchNode* prev /*= nullptr*/) :
 	prevNode(nullptr),
-	pos(currentPosition),
+	pos(_position),
 	G(0.0f), 
-	H(_H),
-	F(0.0f)
+	H(_H)
 {
 	assert(G >= 0 && H >= 0);
 	resetPrev(prev, deltaG);
@@ -18,29 +17,24 @@ void
 SearchNode::resetPrev(SearchNode* prev, float deltaG)
 {
 	prevNode = prev;
+
 	assert(this != prevNode);
 	if (prevNode == nullptr)
 		G = 0.0f;
 	else {
-		printf("%f\n", deltaG);
-		printf("%f\n", prevNode->G);
+		printf("delta G: %f\n", deltaG);
+		printf("prevnode G: %f\n", prevNode->G);
 		float sum = deltaG + prevNode->G;
-		printf("%f\n", sum);
+		printf("sum: %f\n", sum);
+		assert(sum >= 0 && sum < 1000);
 		G = sum;
-		printf("%f\n\n", G);
-		assert(fabsf((deltaG + prevNode->G) - G) < 0.0001f);
+		printf("prevNode adr: %p\n", prevNode);
 	}
 
-	assert(G >= 0  && H >= 0);
-	F = G + H;
+//	assert(G >= 0  && H >= 0)
 }
 
 // return the approximate of the total cost. 
-float
-SearchNode::distance() const
-{
-	return F;
-}
 
 SearchNode::~SearchNode()
 {

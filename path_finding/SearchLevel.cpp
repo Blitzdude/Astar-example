@@ -11,13 +11,14 @@ SearchLevel::~SearchLevel()
 {
 }
 
-bool SearchLevel::init(const uint8_t* inputData, int width, int height)
+bool SearchLevel::init(const uint8_t* inputData, int width, int height) 
 {
 	m_levelData = inputData;
 	if (m_levelData == 0)
 		return false;
 	m_levelWidth = width;
 	m_levelHeight = height;
+
 	return true;
 }
 
@@ -52,14 +53,26 @@ std::vector<Position> SearchLevel::getAdjacentNodes(int posX, int posY)
 	if (isWalkable(posX, posY + 1)) // Up
 		temp.push_back(Position(posX, posY + 1));	
 
+	if (isWalkable(posX + 1, posY + 1)) // Up-Right
+		temp.push_back(Position(posX + 1, posY + 1));
+
+	if (isWalkable(posX + 1, posY)) // Right
+		temp.push_back(Position(posX + 1, posY));	
+
+	if (isWalkable(posX + 1, posY - 1)) // Down-Right
+		temp.push_back(Position(posX + 1, posY - 1));
+
 	if (isWalkable(posX, posY - 1)) // Down
 		temp.push_back(Position(posX, posY - 1));	
+
+	if (isWalkable(posX - 1, posY - 1)) // Down-Left
+		temp.push_back(Position(posX - 1, posY - 1));
 
 	if (isWalkable(posX - 1, posY)) // Left
 		temp.push_back(Position(posX - 1, posY));	
 
-	if (isWalkable(posX + 1, posY)) // Right
-		temp.push_back(Position(posX + 1, posY));	
+	if (isWalkable(posX - 1, posY + 1)) // Up-Left
+		temp.push_back(Position(posX - 1, posY + 1));
 
 	return temp;
 }

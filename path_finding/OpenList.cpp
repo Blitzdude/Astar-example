@@ -3,9 +3,9 @@
 #include <iostream>
 
 namespace {
-bool compareGreater(const SearchNode &a, const SearchNode &b)
+bool compareGreater(const SearchNode* a , const SearchNode* b )
 {
-	return a.F > b.F;
+	return a->getF() > b->getF();
 }
 
 }
@@ -20,13 +20,13 @@ OpenList::~OpenList()
 }
 
 
-const SearchNode * OpenList::findFromOpenList(Position pos)
+SearchNode * OpenList::findFromOpenList(Position _pos)
 {
-	for (auto itr = m_openList.begin(); itr != m_openList.end(); itr++) {
+	for (auto itr : m_openList) {
 
-		if (itr->pos.first == pos.first && itr->pos.second == pos.second)
+		if (itr->pos.first == _pos.first && itr->pos.second == _pos.second)
 		{
-			return &(*itr);
+			return itr;
 		}
 	}
 	return nullptr;
@@ -34,7 +34,7 @@ const SearchNode * OpenList::findFromOpenList(Position pos)
 
 void OpenList::insertToOpenList(SearchNode * n)
 {
-	m_openList.push_back(*n);
+	m_openList.push_back(n);
 }
 
 void OpenList::sortOpenList()
@@ -63,8 +63,9 @@ bool OpenList::isInOpenList(Position pos)
 
 SearchNode* OpenList::RemoveSmallestFFromOpenList()
 {
-	SearchNode* temp = &m_openList.back();
+	SearchNode* temp = m_openList.back();
 	m_openList.pop_back();
+	printf("**Removed from openlist** : %d\n", m_openList.size());
 	return temp;
 }
 

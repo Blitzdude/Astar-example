@@ -8,7 +8,7 @@ public:
 	OpenList();
 	~OpenList();
 
-	const SearchNode* findFromOpenList(Position pos);
+	SearchNode* findFromOpenList(Position pos);
 	void insertToOpenList(SearchNode* n);
 	void sortOpenList();
 	bool isInOpenList(Position pos);
@@ -16,9 +16,9 @@ public:
 	bool isEmpty();
 	void clear();
 	
-	const std::vector<SearchNode>& getList() const { return m_openList; };
+	const std::vector<SearchNode*>& getList() const { return m_openList; };
 
 private:
-	std::vector<SearchNode> m_openList;
+	std::vector<SearchNode*> m_openList;
 };
 
