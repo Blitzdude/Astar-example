@@ -22,13 +22,8 @@ SearchNode::resetPrev(SearchNode* prev, float deltaG)
 	if (prevNode == nullptr)
 		G = 0.0f;
 	else {
-		printf("delta G: %f\n", deltaG);
-		printf("prevnode G: %f\n", prevNode->G);
 		float sum = deltaG + prevNode->G;
-		printf("sum: %f\n", sum);
-		assert(sum >= 0 && sum < 1000);
 		G = sum;
-		printf("prevNode adr: %p\n", prevNode);
 	}
 
 //	assert(G >= 0  && H >= 0)

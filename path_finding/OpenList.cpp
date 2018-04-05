@@ -65,7 +65,7 @@ SearchNode* OpenList::RemoveSmallestFFromOpenList()
 {
 	SearchNode* temp = m_openList.back();
 	m_openList.pop_back();
-	printf("**Removed from openlist** : %d\n", m_openList.size());
+	//printf("**Removed from openlist** : %d\n", m_openList.size());
 	return temp;
 }
 

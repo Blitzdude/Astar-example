@@ -10,6 +10,10 @@
 #include "OpenList.h"
 #include "SearchNode.h"
 #include "SearchLevel.h"
+
+// define debug if you want to see the level beign drawn
+#define DEBUG 
+
 // Function prototypes
 void plasmaTest();
 void drawLevel();
@@ -42,6 +46,7 @@ OpenList openList;
 bool isPathFound = false;
 bool isPathingStarted = false;
 bool isDone = false;
+bool isDrawnOnce = false;
 
 
 namespace
@@ -95,148 +100,159 @@ namespace
 
 		SearchNode* current = nullptr;
 
-		// if pathfinding has not yet been started, insert the first node to open list
-		if (!isPathingStarted)
+#ifndef DEBUG
+		while (!isDone) 
 		{
-			// add start position to open list, set f to 0.
-			SearchNode* start = new SearchNode(Position(startX, startY), dist(startX, startY, endX, endY), 0.0f, nullptr);
-			openList.insertToOpenList(start);
-			isPathingStarted = true;
-		}
+#endif // DEBUG
 
-		
-
-		// A* star pathfinding - main loop
-		if (!openList.isEmpty() && !isPathFound)
-		{
-			// clear the left side
-			memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
-
-			// sort the open list
-			openList.sortOpenList();
-
-			current = openList.RemoveSmallestFFromOpenList();
-			// add the node with smallest f to closed list. 
-			closedList.addToClosedList(current);
-
-			if (current->prevNode != nullptr) {
-
-				assert(current->prevNode->pos.first >= 0 && current->prevNode->pos.first < 1000);
-				assert(current->prevNode->pos.second >= 0 && current->prevNode->pos.second < 1000);
-			}
-
-
-			// coloring here
-			///////////////////////////////////////////
-
-			// color open list nodes magenta
-			for (auto itr : openList.getList())
+			// if pathfinding has not yet been started, insert the first node to open list
+			if (!isPathingStarted)
 			{
-				setPixel(outputData, itr->pos.first, itr->pos.second, levelWidth, levelHeight, 126, 0, 126);
+				// add start position to open list, set f to 0.
+				SearchNode* start = new SearchNode(Position(startX, startY), dist(startX, startY, endX, endY), 0.0f, nullptr);
+				openList.insertToOpenList(start);
+				isPathingStarted = true;
 			}
 
-			// color closed lists according to F
-			for (auto itr : closedList.getList()) {
-				/*
-				setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
-					(itr.second->getF() / (levelWidth+levelHeight + 256)) * 126.0f, 
-					(itr.second->getF() / (levelWidth+levelHeight + 256)) * 256.0f,
-					(itr.second->getF() / (levelWidth+levelHeight + 256)) * 64.0f
-				);
-				*/
-				
-				setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
-					itr.second->getF() ,
-					itr.second->G,
-					itr.second->H
-				);
-			}
+			
 
-			// color current node yellow
-			setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 255, 255, 0);
-
-			// if the current node is the goal
-			if (current->pos.first == endX && current->pos.second == endY)
+			// A* star pathfinding - main loop
+			if (!openList.isEmpty() && !isPathFound)
 			{
-				// path found, set flag
-				isPathFound = true;
-			}
+				// clear the left side
+				memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
 
-			//////////////////////////////////////////
+				// sort the open list
+				openList.sortOpenList();
 
-			if (!isPathFound) // check the neighbors only if the path has not been found yet
-			{
+				current = openList.RemoveSmallestFFromOpenList();
+				// add the node with smallest f to closed list. 
+				closedList.addToClosedList(current);
 
-				// find current nodes walkable neighbors 
-				auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
-				
-				for (auto n_itr : neighbors)
-				{
-					// is neighbor in closed list
-					if (closedList.isInClosedList(n_itr))
-					{
-						continue; // to next neighbor
-					}
+				if (current->prevNode != nullptr) {
 
-					// neighbor is not in open list
-					if (!openList.isInOpenList(n_itr))
-					{
-						// push into openlist
-						openList.insertToOpenList(new SearchNode(
-							n_itr,
-							SearchLevel::manhattanDist(n_itr.first, n_itr.second, endX, endY),
-							SearchLevel::euclideanDist(current->pos.first, current->pos.second, n_itr.first, n_itr.second),
-							current
-						));
-						printf("**added to openlist**: %d\n\n", openList.getList().size());
-
-					}
-					// neighbor is in open list
-					else
-					{
-						/*
-						->check if current.G + neighbor.H < neighbor.F
-						true: update neigbor.F and reparent it to current.
-						false : ignore and go to next neighbor
-						*/
-						auto evaluateThis = openList.findFromOpenList(n_itr);
-						if ((current->G + evaluateThis->H) < evaluateThis->getF())
-						{
-							evaluateThis->resetPrev(current, 1.0f);
-						}
-						else
-						{
-							continue; // go to next neighbor
-						}
-					}
+					assert(current->prevNode->pos.first >= 0 && current->prevNode->pos.first < 1000);
+					assert(current->prevNode->pos.second >= 0 && current->prevNode->pos.second < 1000);
 				}
 
+
+				// coloring here
+				///////////////////////////////////////////
+
+				// color open list nodes magenta
+				for (auto itr : openList.getList())
+				{
+					setPixel(outputData, itr->pos.first, itr->pos.second, levelWidth, levelHeight, 126, 0, 126);
+				}
+
+				// color closed lists according to F
+				for (auto itr : closedList.getList()) {
+					/*
+					setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
+						(itr.second->getF() / (levelWidth+levelHeight + 256)) * 126.0f, 
+						(itr.second->getF() / (levelWidth+levelHeight + 256)) * 256.0f,
+						(itr.second->getF() / (levelWidth+levelHeight + 256)) * 64.0f
+					);
+					*/
+					
+					setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
+						itr.second->getF(),
+						0,
+						255
+					);
+				}
+
+				// color current node yellow
+				setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 255, 255, 0);
+
+				// if the current node is the goal
+				if (current->pos.first == endX && current->pos.second == endY)
+				{
+					// path found, set flag
+					isPathFound = true;
+				}
+
+				//////////////////////////////////////////
+
+				if (!isPathFound) // check the neighbors only if the path has not been found yet
+				{
+
+					// find current nodes walkable neighbors 
+					auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
+					
+					for (auto n_itr : neighbors)
+					{
+						// is neighbor in closed list
+						if (closedList.isInClosedList(n_itr))
+						{
+							continue; // to next neighbor
+						}
+
+						// neighbor is not in open list
+						if (!openList.isInOpenList(n_itr))
+						{
+							// push into openlist
+							openList.insertToOpenList(new SearchNode(
+								n_itr,
+								SearchLevel::manhattanDist(n_itr.first, n_itr.second, endX, endY),
+								SearchLevel::euclideanDist(current->pos.first, current->pos.second, n_itr.first, n_itr.second),
+								current
+							));
+							//printf("**added to openlist**: %d\n\n", openList.getList().size());
+
+						}
+						// neighbor is in open list
+						else
+						{
+							/*
+							->check if current.G + neighbor.H < neighbor.F
+							true: update neigbor.F and reparent it to current.
+							false : ignore and go to next neighbor
+							*/
+							auto evaluateThis = openList.findFromOpenList(n_itr);
+							if ((current->G + evaluateThis->H) < evaluateThis->getF())
+							{
+								evaluateThis->resetPrev(current, 1.0f);
+							}
+							else
+							{
+								continue; // go to next neighbor
+							}
+						}
+					}
+
+				}
 			}
-		}
-		// A* star pathfinding - end loop
-
-		if (openList.isEmpty() && isPathingStarted)
-		{
-			printf("No path found \n");
-		}
 		
-		// traverse the path and set path pixels. 
-		if (isPathFound && !isDone)
-		{
-			// clear the left side
-			//memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
+			// A* star pathfinding - end loop
 
-			// ERROR: Eternally looping, prev node pointing doesn't work
-			do { 
-				// color the current node black
-				setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 0, 20, 0);
-				// make current point to previous node
-				assert(current != current->prevNode);
-				current = current->prevNode;
-			} while (current != nullptr); // do, until we point to the start node, which has no parent
+			if (openList.isEmpty() && isPathingStarted && !isDone)
+			{
+				printf("No path found \n");
+			}
+			
+			// traverse the path and set path pixels. 
+			if (isPathFound && !isDone)
+			{
+				// clear the left side
+				//memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
 
-			isDone = true; // if done, just draw
+				// ERROR: Eternally looping, prev node pointing doesn't work
+				do { 
+					// color the current node black
+					setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 0, 20, 0);
+					// make current point to previous node
+					assert(current != current->prevNode);
+					current = current->prevNode;
+				} while (current != nullptr); // do, until we point to the start node, which has no parent
+
+				openList.clear();
+				closedList.clear();
+				isDone = true; // if done, just draw
+			}
+#ifndef DEBUG
 		}
+#endif // DEBUG
 	}
 };
 
@@ -304,7 +320,7 @@ namespace
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 		glBindTexture(GL_TEXTURE_2D, 0);
 
-		if (searchLevel.init(inputData, levelWidth, levelHeight ))
+		if (!searchLevel.init(inputData, levelWidth, levelHeight ))
 		{
 			printf("failed to init searchlevel\n");
 		}
@@ -366,6 +382,9 @@ namespace
 		doPathFinding(startX, startY, endX, endY);
 
 		drawLevel();
+		
+		
+		
 	}
 } // end - anonymous namespace
 
