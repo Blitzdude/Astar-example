@@ -30,6 +30,9 @@ uint8_t* outputData = 0;
 // width and height of the input and output datas
 int levelWidth = 0;
 int levelHeight = 0;
+float maxF = 0;
+float minF = 99999999;
+
 // start and end position for path finding. These are found automatically from input file.
 int startX = -1;
 int startY = -1;
@@ -51,6 +54,18 @@ bool isDrawnOnce = false;
 
 namespace
 {
+
+
+void getValueBetweenTwoFixedColors(float value, int &red, int &green, int &blue) 
+{
+	int aR = 0, aG = 0, aB = 255; // RGB for our 1st color (blue in this case)
+	int bR = 255, bG = 0, bB = 0; // RGB for our 2nd color (red in this case)
+
+	red		= (float)(bR - aR) * value + aR; // Evaluated as -255*value + 255.
+	green	= (float)(bG - aG) * value + aG; // Evaluated as 0.
+	blue	= (float)(bB - aB) * value + aB; // Evaluated as 255*value + 0.
+}
+
 	// Sets a pixel of rgb color into memory
 	void setPixel(uint8_t* data, int x, int y, int width, int height, uint8_t r, uint8_t g, uint8_t b)
 	{
@@ -96,8 +111,6 @@ namespace
 		// copy input data to output data
 		//memcpy(outputData, inputData, 3 * width*height);
 
-		
-
 		SearchNode* current = nullptr;
 
 #ifndef DEBUG
@@ -142,24 +155,40 @@ namespace
 				// color open list nodes magenta
 				for (auto itr : openList.getList())
 				{
-					setPixel(outputData, itr->pos.first, itr->pos.second, levelWidth, levelHeight, 126, 0, 126);
+					setPixel(outputData, itr->pos.first, itr->pos.second, levelWidth, levelHeight, 255, 0, 255);
 				}
 
 				// color closed lists according to F
 				for (auto itr : closedList.getList()) {
-					/*
-					setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
-						(itr.second->getF() / (levelWidth+levelHeight + 256)) * 126.0f, 
-						(itr.second->getF() / (levelWidth+levelHeight + 256)) * 256.0f,
-						(itr.second->getF() / (levelWidth+levelHeight + 256)) * 64.0f
-					);
-					*/
+										
+					float value = itr.second->getF();
+
+					if (value >= maxF) {
+						maxF = value;
+						printf("Fmin-blue: %2.2f Fmax-red: %2.2f\r", minF, maxF);
+					}
+
+					if (value < minF) {
+						minF = value;
+						printf("Fmin: %2.2f Fmax: %2.2f\r", minF, maxF);
+					}
 					
+					// normalize data point between 0-1
+					value = (value - minF) / (maxF - minF);
+
+					// values to use for color;
+					int r;
+					int g;
+					int b;
+
+					getValueBetweenTwoFixedColors(value, r, g, b);
+
 					setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
-						itr.second->getF(),
-						0,
-						255
+						r,
+						g,
+						b
 					);
+					
 				}
 
 				// color current node yellow
@@ -194,11 +223,10 @@ namespace
 							// push into openlist
 							openList.insertToOpenList(new SearchNode(
 								n_itr,
-								SearchLevel::manhattanDist(n_itr.first, n_itr.second, endX, endY),
+								SearchLevel::euclideanDist(n_itr.first, n_itr.second, endX, endY),
 								SearchLevel::euclideanDist(current->pos.first, current->pos.second, n_itr.first, n_itr.second),
 								current
 							));
-							//printf("**added to openlist**: %d\n\n", openList.getList().size());
 
 						}
 						// neighbor is in open list
@@ -220,7 +248,6 @@ namespace
 							}
 						}
 					}
-
 				}
 			}
 		
