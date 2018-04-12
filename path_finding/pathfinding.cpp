@@ -11,8 +11,13 @@
 #include "SearchNode.h"
 #include "SearchLevel.h"
 
-// define debug if you want to see the level beign drawn
+/* define debug if you want to see the level beign drawn
+ * otherwise program does pathfinding in one go
+*/
 #define DEBUG 
+
+// set heatmap debug to 1 if you want to see the heatmap
+#define HEATMAP_DEBUG 1
 
 // Function prototypes
 void plasmaTest();
@@ -38,13 +43,9 @@ int startX = -1;
 int startY = -1;
 int endX = -1;
 int endY = -1;
-
 SearchLevel searchLevel;
 ClosedList closedList;
 OpenList openList;
-// current node beign evaluated
-//SearchNode* current = nullptr;
-//SearchNode* whyUnoWork = nullptr;
 
 bool isPathFound = false;
 bool isPathingStarted = false;
@@ -55,6 +56,15 @@ bool isDrawnOnce = false;
 namespace
 {
 
+// Sets a pixel of rgb color into memory
+void setPixel(uint8_t* data, int x, int y, int width, int height, uint8_t r, uint8_t g, uint8_t b)
+{
+	uint8_t* pixel = &data[3 * (y*width + x)];
+	pixel[0] = b;
+	pixel[1] = g;
+	pixel[2] = r;
+
+}
 
 void getValueBetweenTwoFixedColors(float value, int &red, int &green, int &blue) 
 {
@@ -66,15 +76,49 @@ void getValueBetweenTwoFixedColors(float value, int &red, int &green, int &blue)
 	blue	= (float)(bB - aB) * value + aB; // Evaluated as 255*value + 0.
 }
 
-	// Sets a pixel of rgb color into memory
-	void setPixel(uint8_t* data, int x, int y, int width, int height, uint8_t r, uint8_t g, uint8_t b)
+void colorHeatmap(ClosedList &closedList) {
+	for (auto itr : closedList.getList())
 	{
-		uint8_t* pixel = &data[3 * (y*width + x)];
-		pixel[0] = b;
-		pixel[1] = g;
-		pixel[2] = r;
-		
+
+		float value = itr.second->getF();
+
+		if (value >= maxF) {
+			maxF = value;
+#ifdef DEBUG
+			printf("                                                       \r"); // ghetto way to clear the row
+			printf("Fmin-blue: %2.2f Fmax-red: %2.2f\r", minF, maxF);
+#endif // DEBUG
+		}
+
+		if (value < minF) {
+			minF = value;
+#ifdef DEBUG
+			printf("                                                       \r"); // ghetto way to clear the row
+			printf("Fmin: %2.2f Fmax: %2.2f\r", minF, maxF);
+#endif // DEBUG
+		}
+
+		// normalize data point between 0-1
+		value = (value - minF) / (maxF - minF);
+
+		// values to use for color;
+		int v_R;
+		int v_G;
+		int v_B;
+
+		// gets the colors
+		getValueBetweenTwoFixedColors(value, v_R, v_G, v_B);
+
+		// sets the pixel 
+		setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
+			v_R,
+			v_G,
+			v_B
+		);
+
 	}
+}
+	
 
 	double dist(double a, double b, double c, double d) { // pythagorian distance
 		return sqrt(double((a - c) * (a - c) + (b - d) * (b - d)));
@@ -104,17 +148,18 @@ void getValueBetweenTwoFixedColors(float value, int &red, int &green, int &blue)
 
 
 	*/
+
 	void doPathFinding(int startX, int startY, int endX, int endY)
 	{
 		//printf("STUDENT_TODO: Do path finding from <%d,%d> to <%d,%d>\n", startX, startY, endX, endY);
-	
+
 		// copy input data to output data
 		//memcpy(outputData, inputData, 3 * width*height);
 
 		SearchNode* current = nullptr;
 
 #ifndef DEBUG
-		while (!isDone) 
+		while (!isDone)
 		{
 #endif // DEBUG
 
@@ -127,7 +172,7 @@ void getValueBetweenTwoFixedColors(float value, int &red, int &green, int &blue)
 				isPathingStarted = true;
 			}
 
-			
+
 
 			// A* star pathfinding - main loop
 			if (!openList.isEmpty() && !isPathFound)
@@ -149,50 +194,22 @@ void getValueBetweenTwoFixedColors(float value, int &red, int &green, int &blue)
 				}
 
 
-				// coloring here
+				// coloring here - if defined debug, otherwise color at the end
 				///////////////////////////////////////////
 
-				// color open list nodes magenta
-				for (auto itr : openList.getList())
+				
+				if (HEATMAP_DEBUG)
 				{
-					setPixel(outputData, itr->pos.first, itr->pos.second, levelWidth, levelHeight, 255, 0, 255);
-				}
+						// color open list nodes magenta
+						for (auto itr : openList.getList())
+						{
+							setPixel(outputData, itr->pos.first, itr->pos.second, levelWidth, levelHeight, 255, 0, 255);
+						}
 
-				// color closed lists according to F
-				for (auto itr : closedList.getList()) {
-										
-					float value = itr.second->getF();
-
-					if (value >= maxF) {
-						maxF = value;
-						printf("Fmin-blue: %2.2f Fmax-red: %2.2f\r", minF, maxF);
-					}
-
-					if (value < minF) {
-						minF = value;
-						printf("Fmin: %2.2f Fmax: %2.2f\r", minF, maxF);
-					}
-					
-					// normalize data point between 0-1
-					value = (value - minF) / (maxF - minF);
-
-					// values to use for color;
-					int r;
-					int g;
-					int b;
-
-					getValueBetweenTwoFixedColors(value, r, g, b);
-
-					setPixel(outputData, itr.first.first, itr.first.second, levelWidth, levelHeight,
-						r,
-						g,
-						b
-					);
+						// color closed lists according to F
+						colorHeatmap(closedList);
 					
 				}
-
-				// color current node yellow
-				setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 255, 255, 0);
 
 				// if the current node is the goal
 				if (current->pos.first == endX && current->pos.second == endY)
@@ -208,7 +225,7 @@ void getValueBetweenTwoFixedColors(float value, int &red, int &green, int &blue)
 
 					// find current nodes walkable neighbors 
 					auto neighbors = searchLevel.getAdjacentNodes(current->pos.first, current->pos.second);
-					
+
 					for (auto n_itr : neighbors)
 					{
 						// is neighbor in closed list
@@ -249,39 +266,39 @@ void getValueBetweenTwoFixedColors(float value, int &red, int &green, int &blue)
 						}
 					}
 				}
-			}
-		
-			// A* star pathfinding - end loop
 
-			if (openList.isEmpty() && isPathingStarted && !isDone)
-			{
-				printf("No path found \n");
-			}
-			
-			// traverse the path and set path pixels. 
-			if (isPathFound && !isDone)
-			{
-				// clear the left side
-				//memcpy(outputData, inputData, 3 * levelWidth*levelHeight);
 
-				// ERROR: Eternally looping, prev node pointing doesn't work
-				do { 
-					// color the current node black
-					setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 0, 20, 0);
-					// make current point to previous node
-					assert(current != current->prevNode);
-					current = current->prevNode;
-				} while (current != nullptr); // do, until we point to the start node, which has no parent
+				// A* star pathfinding - end loop
 
-				openList.clear();
-				closedList.clear();
-				isDone = true; // if done, just draw
-			}
+				if (openList.isEmpty() && isPathingStarted && !isDone)
+				{
+					printf("No path found \n");
+				}
+
+				// traverse the path and set path pixels. 
+				if (isPathFound && !isDone)
+				{
+					// clear the left side
+
+					do {
+						// color the current node black
+						setPixel(outputData, current->pos.first, current->pos.second, levelWidth, levelHeight, 0, 20, 0);
+						// make current point to previous node
+						assert(current != current->prevNode);
+						current = current->prevNode;
+					} while (current != nullptr); // do, until we point to the start node, which has no parent
+
+					openList.clear();
+					closedList.clear();
+					isDone = true; // if done, just draw
+				}
+
 #ifndef DEBUG
-		}
+			}
 #endif // DEBUG
+			}
 	}
-};
+}; // namespace end
 
 
 namespace
@@ -327,18 +344,19 @@ namespace
 	// Initialization
 	bool init()
 	{
-		glMatrixMode(GL_PROJECTION);
-		
-		glOrtho(0, 512 + 4, 256 + 2, 0, -1, 1); //for original input
-		//glOrtho(0, 128 + 4, 64 + 2, 0, -1, 1);
 
 		// Load input file
 		inputTexture = loadBMPTexture("input.bmp", &levelWidth, &levelHeight, &inputData);
 		if (0 == inputTexture)
 		{
-			printf("Error! Cannot open file: \"input2.bmp\"\n");
+			printf("Error! Cannot open file: \"input.bmp\"\n");
 			return false;
 		}
+
+		glMatrixMode(GL_PROJECTION);
+		
+		glOrtho(0, levelWidth*4 + 4, levelHeight*2 + 2, 0, -1, 1); //for original input
+		//glOrtho(0, 128 + 4, 64 + 2, 0, -1, 1);
 
 		// Make outputTexture
 		glGenTextures(1, &outputTexture);
@@ -420,7 +438,7 @@ namespace
 int main(int argc, char ** argv) {
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_RGB | GLUT_DOUBLE);
-	glutInitWindowSize(2 * (512 + 4), 2 * (256 + 2));
+	glutInitWindowSize(2 * (512 + 4), 2 * (256 + 2)); 
 	glutCreateWindow("Pathfinding Demo");
 	glutDisplayFunc(draw);
 	if (!init()) return -1;
