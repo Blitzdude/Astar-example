@@ -1,9 +1,10 @@
 #include <stdint.h>
-#include <stdio.h>
+#include <cstdio>
 #include <cstdlib>
-#include <assert.h>
+#include <cassert>
 #include <glut/glut.h>
-#include <memory.h>
+
+#include <memory>
 #include <iostream>
 
 #include "ClosedList.h"
@@ -14,10 +15,10 @@
 /* define debug if you want to see the level beign drawn
  * otherwise program does pathfinding in one go
 */
-#define DEBUG 
+//#define DEBUG 
 
 // set heatmap debug to 1 if you want to see the heatmap
-#define HEATMAP_DEBUG 1
+#define HEATMAP_DEBUG 0
 
 // Function prototypes
 void plasmaTest();
@@ -27,6 +28,7 @@ void drawLevel();
 // Global variables
 
 // OpenGL texture ids for rendering.
+
 GLuint  inputTexture = 0;
 GLuint  outputTexture = 0;
 // Input and output data in pixels. outputData is updated to outputTexture each frame
